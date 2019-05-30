@@ -1,0 +1,13 @@
+dataflow config server http://35.194.7.44
+
+app register --name jdbc --type source --uri docker://springcloudstream/jdbc-source-rabbit:2.1.2.RELEASE
+ 
+app register --type processor --name user-subscription-billing-processor --uri docker://gcr.io/lp-gcr/user-subscription-billing-processor:0.0.49-Snapshot
+ 
+app register --type processor --name recurring-billing-processor --uri docker://gcr.io/lp-gcr/recurring-billing-processor:0.0.67-Snapshot
+ 
+app register --type sink --name user-subscription-billing-sink --uri docker://gcr.io/lp-gcr/user-subscription-billing-sink:0.0.41-Snapshot
+ 
+stream create --name recurring-billing --definition "jdbc --contentType=application/json --jdbc.query='SELECT id FROM user_subscription WHERE next_renewal_date=CURRENT_DATE() AND processing_billing=false' --trigger.fixed-delay=5 --jdbc.max-rows-per-poll=10  --jdbc.update='UPDATE user_subscription SET processing_billing=true WHERE id in (:id)' --trigger.time-unit=SECONDS --spring.datasource.password=**** --spring.datasource.driver-class-name=org.mariadb.jdbc.Driver --spring.datasource.username=**** --spring.datasource.url=jdbc:mysql://*****:3306/subscription_management_service  | user-subscription-billing-processor | recurring-billing-processor | user-subscription-billing-sink"
+ 
+stream deploy --name recurring-billing --properties 'deployer.recurring-billing-processor.count=2, deployer.*.kubernetes.environmentVariables=SPRING_PROFILES_ACTIVE=dev'
