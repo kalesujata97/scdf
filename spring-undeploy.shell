@@ -1,0 +1,6 @@
+dataflow config server http://35.194.7.44
+stream undeploy --name recurring-billing
+stream destroy --name recurring-billing
+app unregister --name recurring-billing-processor --type processor
+app unregister --name user-subscription-billing-processor --type processor
+app unregister --name user-subscription-billing-sink --type sink
